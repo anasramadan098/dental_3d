@@ -1,0 +1,303 @@
+.page {
+  min-height: 100vh;
+  overflow: clip;
+  background: #171a19;
+  color: #f7f5f0;
+  font-family: var(--font-arabic), sans-serif;
+}
+
+.story {
+  position: relative;
+  height: 100svh;
+  min-height: 580px;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(ellipse at 68% 46%, rgb(148 125 105 / 48%), transparent 42%),
+    linear-gradient(119deg, #34312f 0%, #555047 47%, #262827 100%);
+}
+
+.fallbackVisual {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 68% 44%, rgb(203 183 158 / 24%), transparent 30%),
+    linear-gradient(116deg, #34312f 4%, #59544d 52%, #262827 100%);
+}
+
+.fallbackOrb,
+.fallbackRing {
+  position: absolute;
+  top: 50%;
+  left: 67%;
+  aspect-ratio: 1;
+  border: 1px solid rgb(235 221 201 / 18%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.fallbackOrb {
+  width: min(52vw, 700px);
+  background:
+    radial-gradient(circle at 35% 31%, rgb(244 230 211 / 54%), transparent 1.5%),
+    radial-gradient(ellipse at 39% 35%, rgb(217 198 174 / 36%), transparent 23%),
+    radial-gradient(ellipse at 65% 64%, rgb(153 132 112 / 28%), transparent 52%),
+    radial-gradient(circle at 50% 50%, rgb(172 151 130 / 12%), rgb(20 23 22 / 5%) 66%);
+  box-shadow:
+    inset -28px -34px 70px rgb(14 16 15 / 26%),
+    inset 20px 20px 60px rgb(255 255 255 / 8%),
+    0 0 110px rgb(235 219 197 / 9%);
+}
+
+.fallbackRing {
+  width: min(67vw, 900px);
+  border-color: rgb(240 226 208 / 12%);
+}
+
+.canvas {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 450ms ease;
+}
+
+.canvasReady {
+  opacity: 1;
+}
+
+.overlay {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgb(15 17 16 / 61%) 0%, rgb(20 21 20 / 30%) 55%, rgb(13 15 15 / 44%) 100%),
+    linear-gradient(0deg, rgb(12 14 13 / 48%) 0%, transparent 32%, rgb(12 14 13 / 34%) 100%);
+}
+
+.grain {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");
+}
+
+.sceneLayer {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+}
+
+.scene {
+  position: absolute;
+  width: min(340px, 29vw);
+  opacity: 0;
+  visibility: hidden;
+  text-align: right;
+}
+
+.sceneInitial {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sceneTopLeft {
+  top: 14%;
+  left: 6.5%;
+}
+
+.sceneTopRight {
+  top: 14%;
+  right: 6.5%;
+}
+
+.sceneBottomLeft {
+  bottom: 19%;
+  left: 6.5%;
+}
+
+.sceneBottomRight {
+  bottom: 14%;
+  left: 50%;
+  width: min(560px, 76vw);
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.scene h1 {
+  margin: 0;
+  font-size: clamp(25px, 2.8vw, 38px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.scene p {
+  margin: 5px 0 0;
+  color: rgb(247 245 240 / 76%);
+  font-size: clamp(13px, 1.05vw, 15px);
+  font-weight: 400;
+  line-height: 1.8;
+}
+
+.sceneBottomRight p {
+  margin-inline: auto;
+}
+
+.cta {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 0 22px;
+  border: 1px solid rgb(239 222 201 / 65%);
+  border-radius: 3px;
+  color: #fffaf3;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.cta:hover {
+  background: #f3e7d8;
+  color: #292a27;
+}
+
+.cta span {
+  direction: ltr;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.scrollCue {
+  position: absolute;
+  z-index: 3;
+  right: 5.5vw;
+  bottom: 38px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: rgb(247 245 240 / 70%);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.scrollArrow {
+  color: #e6d2b8;
+  font-size: 18px;
+  animation: nudge 1.8s ease-in-out infinite;
+}
+
+.loader {
+  position: absolute;
+  z-index: 3;
+  bottom: 38px;
+  left: 5.5vw;
+  color: rgb(247 245 240 / 68%);
+  font-size: 12px;
+}
+
+@keyframes nudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+}
+
+@media (max-width: 700px) {
+  .story {
+    min-height: 600px;
+  }
+
+  .fallbackOrb {
+    top: 43%;
+    left: 68%;
+    width: 100vw;
+  }
+
+  .fallbackRing {
+    top: 43%;
+    left: 68%;
+    width: 125vw;
+  }
+
+  .scene {
+    width: calc(50% - 35px);
+  }
+
+  .sceneTopLeft {
+    top: 13%;
+    left: 18px;
+  }
+
+  .sceneTopRight {
+    top: 13%;
+    right: 18px;
+  }
+
+  .sceneBottomLeft {
+    bottom: 20%;
+    left: 18px;
+  }
+
+  .sceneBottomRight {
+    right: auto;
+    bottom: 13%;
+    left: 50%;
+    width: calc(100% - 44px);
+    text-align: center;
+    transform: translateX(-50%);
+  }
+
+  .scene h1 {
+    font-size: clamp(22px, 6vw, 29px);
+    line-height: 1.5;
+  }
+
+  .scene p {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .cta {
+    min-height: 44px;
+    padding-inline: 17px;
+    font-size: 12px;
+  }
+
+  .sceneBottomRight p {
+    margin-inline: auto;
+  }
+
+  .scrollCue {
+    right: 23px;
+    bottom: 28px;
+    font-size: 11px;
+  }
+
+  .loader {
+    bottom: 28px;
+    left: 23px;
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrollArrow {
+    animation: none;
+  }
+
+  .canvas,
+  .cta {
+    transition: none;
+  }
+}

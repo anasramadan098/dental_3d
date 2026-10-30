@@ -1,69 +1,293 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+const FRAME_COUNT = 174;
+const FRAME_PATH = "/imgs/frames/frame_";
+const SCROLL_DISTANCE = 3000;
+const WHATSAPP_URL =
+  "https://wa.me/?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D9%88%D8%AF%20%D8%A7%D9%84%D8%A7%D8%B3%D8%AA%D9%81%D8%B3%D8%A7%D8%B1%20%D8%B9%D9%86%20%D8%AE%D8%AF%D9%85%D8%A7%D8%AA%20%D8%A7%D9%84%D8%B9%D9%8A%D8%A7%D8%AF%D8%A9.";
+
+const scenes = [
+  {
+    title: "ابتسامتك، بثقة.",
+    description: "عناية دقيقة. ونتيجة تشبهك.",
+    position: "sceneTopLeft",
+  },
+  {
+    title: "تفاصيل تصنع الفرق.",
+    description: "تقنيات حديثة، بلمسة هادئة.",
+    position: "sceneTopRight",
+  },
+  {
+    title: "جمال طبيعي.",
+    description: "لأن أجمل ابتسامة هي ابتسامتك.",
+    position: "sceneBottomLeft",
+  },
+  {
+    title: "خطوتك الأولى تبدأ هنا.",
+    description: "نحن هنا للإجابة عن أسئلتك.",
+    position: "sceneBottomRight",
+  },
+];
+
+function frameSource(frame: number) {
+  return `${FRAME_PATH}${String(frame + 1).padStart(4, "0")}.webp`;
+}
 
 export default function Home() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sceneRefs = useRef<(HTMLElement | null)[]>([]);
+  const cueRef = useRef<HTMLDivElement>(null);
+  const [firstFrameReady, setFirstFrameReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext("2d", { alpha: false });
+    if (!canvas || !context) return;
+
+    let activeFrame = 0;
+    let lastDrawnFrame = -1;
+    let animationFrame = 0;
+    let cancelled = false;
+    let failedFrames = 0;
+    let pixelWidth = 0;
+    let pixelHeight = 0;
+    const images: HTMLImageElement[] = new Array(FRAME_COUNT);
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+
+    const drawFrame = (index: number) => {
+      const image = images[index];
+      if (!image?.naturalWidth || !pixelWidth || !pixelHeight) return;
+
+      const scale = Math.max(
+        pixelWidth / image.naturalWidth,
+        pixelHeight / image.naturalHeight,
+      );
+      const drawWidth = image.naturalWidth * scale;
+      const drawHeight = image.naturalHeight * scale;
+      context.drawImage(
+        image,
+        (pixelWidth - drawWidth) / 2,
+        (pixelHeight - drawHeight) / 2,
+        drawWidth,
+        drawHeight,
+      );
+      lastDrawnFrame = index;
+    };
+
+    const requestDraw = (frame: number) => {
+      activeFrame = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(frame)));
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(() => {
+        if (images[activeFrame]?.naturalWidth) {
+          drawFrame(activeFrame);
+        }
+      });
+    };
+
+    const resizeCanvas = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      pixelWidth = Math.round(canvas.clientWidth * pixelRatio);
+      pixelHeight = Math.round(canvas.clientHeight * pixelRatio);
+      if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+        canvas.width = pixelWidth;
+        canvas.height = pixelHeight;
+        if (images[activeFrame]?.naturalWidth) {
+          drawFrame(activeFrame);
+        } else if (lastDrawnFrame >= 0) {
+          drawFrame(lastDrawnFrame);
+        }
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(resizeCanvas);
+    resizeObserver.observe(canvas);
+    resizeCanvas();
+
+    const loadImage = async (index: number) => {
+      const image = new Image();
+      images[index] = image;
+      image.src = frameSource(index);
+
+      try {
+        await image.decode();
+        if (cancelled) return;
+        if (index === 0) {
+          setFirstFrameReady(true);
+          requestDraw(0);
+        } else if (index === activeFrame) {
+          requestDraw(index);
+        }
+      } catch {
+        if (!cancelled) failedFrames += 1;
+      }
+    };
+
+    const preloadFrames = async () => {
+      await loadImage(0);
+      if (cancelled) return;
+
+      const queue = Array.from({ length: FRAME_COUNT - 1 }, (_, index) => index + 1);
+      let nextIndex = 0;
+      const worker = async () => {
+        while (!cancelled) {
+          const index = nextIndex;
+          nextIndex += 1;
+          if (index >= queue.length) return;
+          await loadImage(queue[index]);
+        }
+      };
+
+      await Promise.all(Array.from({ length: 6 }, () => worker()));
+      if (!cancelled && failedFrames > 0) setLoadError(true);
+    };
+
+    void preloadFrames();
+
+    gsap.registerPlugin(ScrollTrigger);
+    const ctx = gsap.context(() => {
+      const frameProgress = { frame: 0 };
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: `+=${SCROLL_DISTANCE}`,
+          pin: true,
+          scrub: true,
+          anticipatePin: 1,
+        },
+      });
+
+      timeline.to(frameProgress, {
+        frame: FRAME_COUNT - 1,
+        duration: FRAME_COUNT,
+        ease: "none",
+        onUpdate: () => requestDraw(frameProgress.frame),
+      });
+
+      if (cueRef.current) {
+        timeline.to(
+          cueRef.current,
+          { autoAlpha: 0, duration: 4, ease: "none" },
+          0,
+        );
+      }
+
+      const sceneRanges = [
+        { start: 0, end: 40 },
+        { start: 40, end: 90 },
+        { start: 90, end: 140 },
+        { start: 140, end: FRAME_COUNT },
+      ];
+
+      sceneRefs.current.forEach((element, index) => {
+        if (!element) return;
+        const { start, end } = sceneRanges[index];
+        const fadeDuration = 5;
+
+        if (index > 0) {
+          timeline.fromTo(
+            element,
+            { autoAlpha: 0 },
+            {
+              autoAlpha: 1,
+              duration: fadeDuration,
+              ease: "power1.out",
+              immediateRender: false,
+            },
+            start,
+          );
+        }
+
+        if (index < sceneRanges.length - 1) {
+          timeline.to(
+            element,
+            {
+              autoAlpha: 0,
+              duration: fadeDuration,
+              ease: "power1.in",
+            },
+            end - fadeDuration,
+          );
+        }
+      });
+    }, sectionRef);
+
+    return () => {
+      cancelled = true;
+      ctx.revert();
+      resizeObserver.disconnect();
+      cancelAnimationFrame(animationFrame);
+      images.forEach((image) => {
+        image.onload = null;
+        image.onerror = null;
+        image.src = "";
+      });
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <main className="page" dir="rtl">
+      <section
+        className="story"
+        id="home"
+        ref={sectionRef}
+        aria-label="رعاية أسنان تليق بابتسامتك"
+      >
+        <div className="fallbackVisual" aria-hidden="true">
+          <div className="fallbackOrb" />
+          <div className="fallbackRing" />
+        </div>
+        <canvas
+          ref={canvasRef}
+          className={`canvas ${firstFrameReady ? "canvasReady" : ""}`}
+          aria-hidden="true"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+        <div className="overlay" aria-hidden="true" />
+        <div className="grain" aria-hidden="true" />
+
+        <div className="sceneLayer">
+          {scenes.map((scene, index) => (
+            <article
+              className={`scene ${scene.position} ${index === 0 ? "sceneInitial" : ""}`}
+              key={scene.title}
+              ref={(element) => {
+                sceneRefs.current[index] = element;
+              }}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <h1>{scene.title}</h1>
+              <p>{scene.description}</p>
+              {index === scenes.length - 1 && (
+                <a
+                  className="cta"
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  تواصل عبر واتساب <span aria-hidden="true">↗</span>
+                </a>
+              )}
+            </article>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {!firstFrameReady && (
+          <div className="loader" role="status">
+            {loadError ? "تعذّر تحميل بعض الصور" : "لحظات..."}
+          </div>
+        )}
+
+        <div className="scrollCue" ref={cueRef}>
+          <span>مرّر للاكتشاف</span>
+          <span className="scrollArrow" aria-hidden="true">↓</span>
         </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
